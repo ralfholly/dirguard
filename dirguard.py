@@ -3,6 +3,7 @@
 import os
 import os.path
 import sys
+import argparse
 
 
 class DirEntry:
@@ -71,20 +72,25 @@ def delete_dir_entry_from_disk(dir_entry):
     os.remove(dir_entry.name)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        fatal("Usage: %s <max-size> <dir>" % sys.argv[0])
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Enforces size limits on directories", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("mode", choices=["count", "size"], help="Enforce max. count of files or max. size of directory")
+    parser.add_argument("value", metavar="N", type=int, help="Constraint value (count of files or directory size in bytes)")
+    parser.add_argument("-d", "--dir-path", type=str, help="Path to directory")
+
+    #parser.add_argument('--chance', type=float, help='Chance in percent that a mutation occurs in a copied character', default=5.0)
+    #parser.add_argument('--target', type=str, help='Target string (only use chars A-Z and space)', default="METHINKS IT IS LIKE A WEASEL")
+    args = parser.parse_args()
 
     try:
-        max_size = int(sys.argv[1])
+        max_size = args.value
     except ValueError:
         fatal("Please give a numeric value for <max-size>")
     if max_size <= 0:
         fatal("<max-size> must be a positiv integer")
 
-    dir_path = sys.argv[2]
-    if not os.path.isdir(dir_path):
-        fatal("Directory '%s' not found" % dir_path)
+    if not os.path.isdir(args.dir_path):
+        fatal("Directory '%s' not found" % args.dir_path)
 
-    dir_list = make_dir_list_from_directory(dir_path)
+    dir_list = make_dir_list_from_directory(args.dir_path)
     cleanup_for_size(dir_list, max_size, delete_dir_entry_from_disk)
