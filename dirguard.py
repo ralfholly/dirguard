@@ -39,24 +39,25 @@ def oldest_entry(dir_list):
     return None
 
 
-def delete_oldest_entry(dir_list, file_delete_fun=None):
+def delete_oldest_entry(dir_list, **kwargs):
     entry_index = oldest_entry(dir_list)
     if entry_index is not None:
+        file_delete_fun = kwargs.get("file_delete_fun")
         if file_delete_fun:
             file_delete_fun(dir_list[entry_index])
         del dir_list[entry_index]
 
 
-def cleanup_for_size(dir_list, max_size, file_delete_fun=None):
+def cleanup_for_size(dir_list, max_size, **kwargs):
     assert max_size >= 1
     while dir_entry_count(dir_list) and dir_size(dir_list) > max_size:
-        delete_oldest_entry(dir_list, file_delete_fun)
+        delete_oldest_entry(dir_list, **kwargs)
 
 
-def cleanup_for_entry_count(dir_list, max_entries, file_delete_fun=None):
+def cleanup_for_entry_count(dir_list, max_entries, **kwargs):
     assert max_entries >= 1
     while dir_entry_count(dir_list) > max_entries:
-        delete_oldest_entry(dir_list, file_delete_fun)
+        delete_oldest_entry(dir_list, **kwargs)
 
 
 def make_dir_list_from_directory(path):
@@ -84,9 +85,8 @@ if __name__ == "__main__":
     parser.add_argument("mode", choices=["count", "size"], help="Enforce max. count of files or max. size of directory")
     parser.add_argument("value", metavar="N", type=int, help="Constraint value (count of files or directory size in bytes)")
     parser.add_argument("-d", "--dir-path", type=str, help="Path to directory")
+    parser.add_argument('--verbose', type=bool, help='Verbose output', default=False)
 
-    #parser.add_argument('--chance', type=float, help='Chance in percent that a mutation occurs in a copied character', default=5.0)
-    #parser.add_argument('--target', type=str, help='Target string (only use chars A-Z and space)', default="METHINKS IT IS LIKE A WEASEL")
     args = parser.parse_args()
     if args.value <= 0:
         fatal("Value must be a positiv integer")
@@ -97,8 +97,8 @@ if __name__ == "__main__":
     dir_list = make_dir_list_from_directory(args.dir_path)
 
     if args.mode == "size":
-        cleanup_for_size(dir_list, args.value, delete_dir_entry_from_disk)
+        cleanup_for_size(dir_list, args.value, file_delete_fun=delete_dir_entry_from_disk, verbose=args.verbose)
     elif args.mode == "count":
-        cleanup_for_entry_count(dir_list, args.value, delete_dir_entry_from_disk)
+        cleanup_for_entry_count(dir_list, args.value, file_delete_fun=delete_dir_entry_from_disk, verbose=args.verbose)
     else:
         assert False

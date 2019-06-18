@@ -37,7 +37,7 @@ class MyTest(unittest.TestCase):
         dir_list_copy = dir_list[:]
         self.assertEqual(3, dir_entry_count(dir_list))
         file_deleter = unittest.mock.MagicMock()
-        delete_oldest_entry(dir_list, file_deleter)
+        delete_oldest_entry(dir_list, file_delete_fun=file_deleter)
         file_deleter.assert_called_with(dir_list_copy[1])
         self.assertEqual(2, dir_entry_count(dir_list))
 
@@ -46,7 +46,7 @@ class MyTest(unittest.TestCase):
         dir_list = []
         self.assertEqual(0, dir_entry_count(dir_list))
         file_deleter = unittest.mock.MagicMock()
-        delete_oldest_entry(dir_list, file_deleter)
+        delete_oldest_entry(dir_list, file_delete_fun=file_deleter)
         self.assertEqual(0, file_deleter.call_count)
         self.assertEqual(0, dir_entry_count(dir_list))
 
