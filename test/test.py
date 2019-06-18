@@ -67,6 +67,22 @@ class MyTest(unittest.TestCase):
         self.assertEqual(0, dir_size(dir_list))
 
 
+    def test_cleanup_for_entry_count_simple(self):
+        dir_list = [DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)]
+        self.assertEqual(3, dir_entry_count(dir_list))
+        cleanup_for_entry_count(dir_list, 1000)
+        self.assertEqual(3, dir_entry_count(dir_list))
+
+        cleanup_for_entry_count(dir_list, 2)
+        self.assertEqual(2, dir_entry_count(dir_list))
+        self.assertEqual("a", dir_list[0].name)
+        self.assertEqual("c", dir_list[1].name)
+
+        cleanup_for_entry_count(dir_list, 1)
+        self.assertEqual(1, dir_entry_count(dir_list))
+        self.assertEqual("c", dir_list[0].name)
+
+
     def test_make_dir_list_from_directory(self):
         # A very, very, minimal test, indeed.
         self.assertTrue(make_dir_list_from_directory('/tmp/'))

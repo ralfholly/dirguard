@@ -48,7 +48,14 @@ def delete_oldest_entry(dir_list, file_delete_fun=None):
 
 
 def cleanup_for_size(dir_list, max_size, file_delete_fun=None):
+    assert max_size >= 1
     while dir_entry_count(dir_list) and dir_size(dir_list) > max_size:
+        delete_oldest_entry(dir_list, file_delete_fun)
+
+
+def cleanup_for_entry_count(dir_list, max_entries, file_delete_fun=None):
+    assert max_entries >= 1
+    while dir_entry_count(dir_list) > max_entries:
         delete_oldest_entry(dir_list, file_delete_fun)
 
 
@@ -81,16 +88,17 @@ if __name__ == "__main__":
     #parser.add_argument('--chance', type=float, help='Chance in percent that a mutation occurs in a copied character', default=5.0)
     #parser.add_argument('--target', type=str, help='Target string (only use chars A-Z and space)', default="METHINKS IT IS LIKE A WEASEL")
     args = parser.parse_args()
-
-    try:
-        max_size = args.value
-    except ValueError:
-        fatal("Please give a numeric value for <max-size>")
-    if max_size <= 0:
-        fatal("<max-size> must be a positiv integer")
+    if args.value <= 0:
+        fatal("Value must be a positiv integer")
 
     if not os.path.isdir(args.dir_path):
         fatal("Directory '%s' not found" % args.dir_path)
 
     dir_list = make_dir_list_from_directory(args.dir_path)
-    cleanup_for_size(dir_list, max_size, delete_dir_entry_from_disk)
+
+    if args.mode == "size":
+        cleanup_for_size(dir_list, args.value, delete_dir_entry_from_disk)
+    elif args.mode == "count":
+        cleanup_for_entry_count(dir_list, args.value, delete_dir_entry_from_disk)
+    else:
+        assert False
