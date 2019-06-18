@@ -16,6 +16,10 @@ class DirEntry:
         return "DirEntry(%s, %s, %s)" % (self.name, self.size, self.time)
 
 
+    def __str__(self):
+        return "%s (size=%s, time=%s)" % (self.name, self.size, self.time)
+
+
 def dir_size(dir_list):
     total_size = sum([entry.size for entry in dir_list])
     return total_size
@@ -43,6 +47,8 @@ def delete_oldest_entry(dir_list, **kwargs):
     entry_index = oldest_entry(dir_list)
     if entry_index is not None:
         file_delete_fun = kwargs.get("file_delete_fun")
+        if kwargs.get("verbose"):
+            print("Deleting %s" % dir_list[entry_index])
         if file_delete_fun:
             file_delete_fun(dir_list[entry_index])
         del dir_list[entry_index]
@@ -52,12 +58,19 @@ def cleanup_for_size(dir_list, max_size, **kwargs):
     assert max_size >= 1
     while dir_entry_count(dir_list) and dir_size(dir_list) > max_size:
         delete_oldest_entry(dir_list, **kwargs)
+    if kwargs.get("verbose"):
+        print("Current directory size: %d" % dir_size(dir_list))
+        print("Entries left: %d" % dir_entry_count(dir_list))
+
+
 
 
 def cleanup_for_entry_count(dir_list, max_entries, **kwargs):
     assert max_entries >= 1
     while dir_entry_count(dir_list) > max_entries:
         delete_oldest_entry(dir_list, **kwargs)
+    if kwargs.get("verbose"):
+        print("Entries left: %d" % dir_entry_count(dir_list))
 
 
 def make_dir_list_from_directory(path):
@@ -85,7 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("mode", choices=["count", "size"], help="Enforce max. count of files or max. size of directory")
     parser.add_argument("value", metavar="N", type=int, help="Constraint value (count of files or directory size in bytes)")
     parser.add_argument("-d", "--dir-path", type=str, help="Path to directory")
-    parser.add_argument('--verbose', type=bool, help='Verbose output', default=False)
+    parser.add_argument('--verbose', action="store_true", help='Verbose output')
 
     args = parser.parse_args()
     if args.value <= 0:
