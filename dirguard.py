@@ -63,8 +63,6 @@ def cleanup_for_size(dir_list, max_size, **kwargs):
         print("Entries left: %d" % dir_entry_count(dir_list))
 
 
-
-
 def cleanup_for_entry_count(dir_list, max_entries, **kwargs):
     assert max_entries >= 1
     while dir_entry_count(dir_list) > max_entries:
