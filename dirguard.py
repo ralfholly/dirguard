@@ -36,7 +36,7 @@ def dir_entry_count(dir_list):
 
 def delete_oldest_entry(sorted_dir_list, **kwargs):
     if sorted_dir_list:
-        oldest_index = 0 
+        oldest_index = 0
         file_delete_fun = kwargs.get("file_delete_fun")
         if kwargs.get("verbose"):
             print("Deleting %s" % sorted_dir_list[oldest_index])
@@ -67,7 +67,7 @@ def cleanup_for_entry_count(sorted_dir_list, max_entries, **kwargs):
     return sorted_dir_list
 
 
-def make_dir_list_from_directory(path):
+def make_dir_list_from_directory(path, **kwargs):
     dir_stack = [path]
     dir_list = []
     while dir_stack:
@@ -77,7 +77,7 @@ def make_dir_list_from_directory(path):
             if os.path.isfile(qualified_name):
                 stat = os.stat(qualified_name)
                 dir_list.append(DirEntry(qualified_name, stat.st_size, stat.st_mtime))
-            elif os.path.isdir(qualified_name):
+            elif kwargs.get("recursive") and os.path.isdir(qualified_name):
                 dir_stack.append(qualified_name)
 
     return make_sorted_dir_list(dir_list)
@@ -110,7 +110,7 @@ def main():
     if args.mode != "size" and args.recursive:
         fatal("Recursive processing only supported for mode 'size'")
 
-    dir_list = make_dir_list_from_directory(args.dir_path)
+    dir_list = make_dir_list_from_directory(args.dir_path, recursive=args.recursive)
 
     if args.mode == "size":
         cleanup_for_size(dir_list, args.value, file_delete_fun=delete_dir_entry_from_disk, verbose=args.verbose)
