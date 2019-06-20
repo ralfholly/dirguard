@@ -5,6 +5,7 @@ import os.path
 import sys
 import argparse
 
+# pylint:disable=redefined-outer-name
 
 class DirEntry:
     def __init__(self, name, size, time):
@@ -56,6 +57,7 @@ def delete_oldest_entry(dir_list, **kwargs):
 
 def cleanup_for_size(dir_list, max_size, **kwargs):
     assert max_size >= 1
+    print("Current directory size: %d" % dir_size(dir_list))
     while dir_entry_count(dir_list) and dir_size(dir_list) > max_size:
         delete_oldest_entry(dir_list, **kwargs)
     if kwargs.get("verbose"):
@@ -72,12 +74,19 @@ def cleanup_for_entry_count(dir_list, max_entries, **kwargs):
 
 
 def make_dir_list_from_directory(path):
+    dir_stack = [path]
     dir_list = []
-    for f in os.listdir(path):
-        qualified_name = os.path.join(path, f)
-        if os.path.isfile(qualified_name):
-            stat = os.stat(qualified_name)
-            dir_list.append(DirEntry(qualified_name, stat.st_size, stat.st_mtime))
+    while dir_stack:
+        current_dir_path = dir_stack.pop()
+        print("Processing " + current_dir_path)
+        for f in os.listdir(current_dir_path):
+            qualified_name = os.path.join(current_dir_path, f)
+            if os.path.isfile(qualified_name):
+                stat = os.stat(qualified_name)
+                print("Adding " + qualified_name)
+                dir_list.append(DirEntry(qualified_name, stat.st_size, stat.st_mtime))
+            elif os.path.isdir(qualified_name):
+                dir_stack.append(qualified_name)
 
     return dir_list
 
@@ -91,12 +100,13 @@ def delete_dir_entry_from_disk(dir_entry):
     os.remove(dir_entry.name)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Enforces size limits on directories", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("mode", choices=["count", "size"], help="Enforce max. count of files or max. size of directory")
     parser.add_argument("value", metavar="N", type=int, help="Constraint value (count of files or directory size in bytes)")
     parser.add_argument("-d", "--dir-path", type=str, help="Path to directory")
-    parser.add_argument('--verbose', action="store_true", help='Verbose output')
+    parser.add_argument('--verbose', action="store_true", help="Verbose output")
+    parser.add_argument('--recursive', action="store_true", help="Recurse into subdirectories (only for mode \'size\'")
 
     args = parser.parse_args()
     if args.value <= 0:
@@ -104,6 +114,9 @@ if __name__ == "__main__":
 
     if not os.path.isdir(args.dir_path):
         fatal("Directory '%s' not found" % args.dir_path)
+
+    if args.mode != "size" and args.recursive:
+        fatal("Recursive processing only supported for mode 'size'")
 
     dir_list = make_dir_list_from_directory(args.dir_path)
 
@@ -113,3 +126,7 @@ if __name__ == "__main__":
         cleanup_for_entry_count(dir_list, args.value, file_delete_fun=delete_dir_entry_from_disk, verbose=args.verbose)
     else:
         assert False
+
+
+if __name__ == '__main__':
+    main()
