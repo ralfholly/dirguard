@@ -21,6 +21,10 @@ class DirEntry:
         return "%s (size=%s, time=%s)" % (self.name, self.size, self.time)
 
 
+def make_sorted_dir_list(dir_list):
+    return sorted(dir_list, key=lambda dir_entry: dir_entry.time)
+
+
 def dir_size(dir_list):
     total_size = sum([entry.size for entry in dir_list])
     return total_size
@@ -30,47 +34,37 @@ def dir_entry_count(dir_list):
     return len(dir_list)
 
 
-def oldest_entry(dir_list):
-    if dir_list:
-        min_index = 0
-        min_time = dir_list[0].time
-
-        for index, entry in enumerate(dir_list[1:]):
-            if entry.time < min_time:
-                min_index = index + 1
-                min_time = entry.time
-
-        return min_index
-    return None
-
-
-def delete_oldest_entry(dir_list, **kwargs):
-    entry_index = oldest_entry(dir_list)
-    if entry_index is not None:
+def delete_oldest_entry(sorted_dir_list, **kwargs):
+    if sorted_dir_list:
+        oldest_index = 0 
         file_delete_fun = kwargs.get("file_delete_fun")
         if kwargs.get("verbose"):
-            print("Deleting %s" % dir_list[entry_index])
+            print("Deleting %s" % sorted_dir_list[oldest_index])
         if file_delete_fun:
-            file_delete_fun(dir_list[entry_index])
-        del dir_list[entry_index]
+            file_delete_fun(sorted_dir_list[oldest_index])
+        del sorted_dir_list[oldest_index]
 
 
-def cleanup_for_size(dir_list, max_size, **kwargs):
+def cleanup_for_size(sorted_dir_list, max_size, **kwargs):
     assert max_size >= 1
-    print("Current directory size: %d" % dir_size(dir_list))
-    while dir_entry_count(dir_list) and dir_size(dir_list) > max_size:
-        delete_oldest_entry(dir_list, **kwargs)
     if kwargs.get("verbose"):
-        print("Current directory size: %d" % dir_size(dir_list))
-        print("Entries left: %d" % dir_entry_count(dir_list))
+        print("Current directory size: %d" % dir_size(sorted_dir_list))
+    while dir_entry_count(sorted_dir_list) and dir_size(sorted_dir_list) > max_size:
+        delete_oldest_entry(sorted_dir_list, **kwargs)
+    if kwargs.get("verbose"):
+        print("Current directory size: %d" % dir_size(sorted_dir_list))
+        print("Entries left: %d" % dir_entry_count(sorted_dir_list))
 
 
-def cleanup_for_entry_count(dir_list, max_entries, **kwargs):
+def cleanup_for_entry_count(sorted_dir_list, max_entries, **kwargs):
     assert max_entries >= 1
-    while dir_entry_count(dir_list) > max_entries:
-        delete_oldest_entry(dir_list, **kwargs)
     if kwargs.get("verbose"):
-        print("Entries left: %d" % dir_entry_count(dir_list))
+        print("Current number of entries: %d" % dir_entry_count(sorted_dir_list))
+    while dir_entry_count(sorted_dir_list) > max_entries:
+        delete_oldest_entry(sorted_dir_list, **kwargs)
+    if kwargs.get("verbose"):
+        print("Current number of entries: %d" % dir_entry_count(sorted_dir_list))
+    return sorted_dir_list
 
 
 def make_dir_list_from_directory(path):
@@ -78,17 +72,15 @@ def make_dir_list_from_directory(path):
     dir_list = []
     while dir_stack:
         current_dir_path = dir_stack.pop()
-        print("Processing " + current_dir_path)
         for f in os.listdir(current_dir_path):
             qualified_name = os.path.join(current_dir_path, f)
             if os.path.isfile(qualified_name):
                 stat = os.stat(qualified_name)
-                print("Adding " + qualified_name)
                 dir_list.append(DirEntry(qualified_name, stat.st_size, stat.st_mtime))
             elif os.path.isdir(qualified_name):
                 dir_stack.append(qualified_name)
 
-    return dir_list
+    return make_sorted_dir_list(dir_list)
 
 
 def fatal(msg):

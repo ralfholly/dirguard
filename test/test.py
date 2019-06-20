@@ -23,36 +23,27 @@ class MyTest(unittest.TestCase):
         self.assertEqual(0, dir_entry_count((())))
 
 
-    def test_oldest_entry(self):
-        self.assertEqual(1, oldest_entry(
-            (DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 300))))
-        self.assertEqual(0, oldest_entry(
-            (DirEntry('a', 30, 0), DirEntry('b', 20, 100), DirEntry('c', 42, 300))))
-        self.assertEqual(2, oldest_entry(
-            (DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 10))))
-
-
     def test_delete_oldest_entry(self):
-        dir_list = [DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)]
-        dir_list_copy = dir_list[:]
-        self.assertEqual(3, dir_entry_count(dir_list))
+        sorted_dir_list = make_sorted_dir_list([DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)])
+        sorted_dir_list_copy = sorted_dir_list[:]
+        self.assertEqual(3, dir_entry_count(sorted_dir_list))
         file_deleter = unittest.mock.MagicMock()
-        delete_oldest_entry(dir_list, file_delete_fun=file_deleter)
-        file_deleter.assert_called_with(dir_list_copy[1])
-        self.assertEqual(2, dir_entry_count(dir_list))
+        delete_oldest_entry(sorted_dir_list, file_delete_fun=file_deleter)
+        file_deleter.assert_called_with(sorted_dir_list_copy[0])
+        self.assertEqual(2, dir_entry_count(sorted_dir_list))
 
 
     def test_delete_oldest_entry_empty(self):
-        dir_list = []
-        self.assertEqual(0, dir_entry_count(dir_list))
+        sorted_dir_list = make_sorted_dir_list([])
+        self.assertEqual(0, dir_entry_count(sorted_dir_list))
         file_deleter = unittest.mock.MagicMock()
-        delete_oldest_entry(dir_list, file_delete_fun=file_deleter)
+        delete_oldest_entry(sorted_dir_list, file_delete_fun=file_deleter)
         self.assertEqual(0, file_deleter.call_count)
-        self.assertEqual(0, dir_entry_count(dir_list))
+        self.assertEqual(0, dir_entry_count(sorted_dir_list))
 
 
     def test_cleanup_for_size_simple(self):
-        dir_list = [DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)]
+        dir_list = make_sorted_dir_list([DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)])
         self.assertEqual(30 + 20 + 42, dir_size(dir_list))
         cleanup_for_size(dir_list, 60)
         self.assertEqual(42, dir_size(dir_list))
@@ -68,7 +59,7 @@ class MyTest(unittest.TestCase):
 
 
     def test_cleanup_for_entry_count_simple(self):
-        dir_list = [DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)]
+        dir_list = make_sorted_dir_list([DirEntry('a', 30, 200), DirEntry('b', 20, 100), DirEntry('c', 42, 400)])
         self.assertEqual(3, dir_entry_count(dir_list))
         cleanup_for_entry_count(dir_list, 1000)
         self.assertEqual(3, dir_entry_count(dir_list))
@@ -85,4 +76,4 @@ class MyTest(unittest.TestCase):
 
     def test_make_dir_list_from_directory(self):
         # A very, very, minimal test, indeed.
-        self.assertTrue(make_dir_list_from_directory('/tmp/'))
+        self.assertTrue(make_dir_list_from_directory('.'))
