@@ -67,8 +67,8 @@ def cleanup_for_entry_count(sorted_dir_list, max_entries, **kwargs):
     return sorted_dir_list
 
 
-def make_dir_list_from_directory(path, **kwargs):
-    dir_stack = [path]
+def make_dir_list_from_directory(dir_path, **kwargs):
+    dir_stack = [dir_path]
     dir_list = []
     while dir_stack:
         current_dir_path = dir_stack.pop()
@@ -92,6 +92,25 @@ def delete_dir_entry_from_disk(dir_entry):
     os.remove(dir_entry.name)
 
 
+def remove_empty_dirs(dir_path, nesting_level=0, **kwargs):
+    files = os.listdir(dir_path)
+    num_files = len(files)
+
+    for f in files:
+        sub_dir_path = os.path.join(dir_path, f)
+        if os.path.isdir(sub_dir_path):
+            num_files -= remove_empty_dirs(sub_dir_path, nesting_level + 1, **kwargs)
+
+    if num_files == 0 and nesting_level != 0:
+        # Directory is empty and not top-level, so remove it.
+        if kwargs.get("verbose"):
+            print("Removing empty dir " + dir_path)
+        os.rmdir(dir_path)
+        return 1
+
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="Enforces size limits on directories", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("mode", choices=["count", "size"], help="Enforce max. count of files or max. size of directory")
@@ -99,6 +118,7 @@ def main():
     parser.add_argument("-d", "--dir-path", type=str, help="Path to directory")
     parser.add_argument('--verbose', action="store_true", help="Verbose output")
     parser.add_argument('--recursive', action="store_true", help="Recurse into subdirectories (only for mode \'size\'")
+    parser.add_argument('--remove-empty-dirs', action="store_true", help="Remove empty directories")
 
     args = parser.parse_args()
     if args.value <= 0:
@@ -119,6 +139,8 @@ def main():
     else:
         assert False
 
+    if args.remove_empty_dirs:
+        remove_empty_dirs(args.dir_path, verbose=args.verbose)
 
 if __name__ == '__main__':
     main()
